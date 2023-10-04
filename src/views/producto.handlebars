@@ -1,0 +1,25 @@
+<h1>Bienvenido {{first_name}} </h1>
+<p> Mail: {{email}}</p>
+<p> Edad: {{age}}</p>
+<p> Administrador: NO</p>
+
+<p>Producotos disponibles</p>
+
+<ul>
+        {{#each products}}
+            <li>{{ this.nombre }} - Precio: {{ this.precio}}  - ID: {{ this.id }}</li>
+        {{/each}}
+    </ul>
+      
+      <form method="PUT" action="serch">
+    <label for="pid">ID</label>
+    <input type="text" name="pid" required>
+
+
+    <button type="submit">agregar al carrito</button>
+   
+</form>
+
+<form method="GET" action="logout">
+    <button type="submit">Cerrar sesión</button>
+</form>

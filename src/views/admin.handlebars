@@ -1,0 +1,31 @@
+<h1>Bienvenido {{first_name}} </h1>
+<p> Mail: {{email}}</p>
+<p> Edad: {{age}}</p>
+<p> Administrador: SI</p>
+
+<p>Producotos disponibles</p>
+
+<ul>
+        {{#each products}}
+            <li>{{ this.nombre }} - Precio: {{ this.precio }} - Stock: {{ this.stock }} 
+            </li>
+        {{/each}}
+    </ul>
+      
+            <form method="PUT" action="serch">
+    <label for="nombre">nombre</label>
+    <input type="text" name="nombre" required>
+    <label for="categoria">categoria</label>
+    <input type="text" name="categoria" required>
+    <label for="precio ">precio</label>
+    <input type="text" name="precio" required>
+    <label for="stock">stock</label>
+    <input type="text" name="stock" required>
+    <label for="imagen">imagen</label>
+    <input type="text" name="imagen" required>
+
+<button type="submit">agregar productos</button>
+
+<form method="GET" action="logout">
+    <button type="submit">Cerrar sesión</button>
+</form>
