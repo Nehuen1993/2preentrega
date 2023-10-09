@@ -8,10 +8,8 @@ const usersRouter = require('./routes/users.router');
 const passport = require("passport")
 const initializePassport = require("./config/passport.config");
 const cookieParser = require('cookie-parser');
-const productRoutes = require('./routes/products.routes')
-const cartRoutes = require('./routes/cart.routes')
 const { products } = require('./models/Product');
-const mongoosePaginate = require('mongoose-paginate-v2');
+
 
 
 
@@ -29,9 +27,6 @@ await mongoose.connect("mongodb+srv://nehuengiannone:Lz7n3cS0vO7ulfvk@cluster0.s
     .catch(error => {
         console.error ("error de conexion", error)
     })
-    
-
-    console.log (products)
     
     }
     environment()
@@ -55,14 +50,9 @@ app.engine('handlebars', handlebars.engine())
 app.set('views', __dirname + '/views')
 app.set('view engine', 'handlebars')
 
-initializePassport(passport)
-app.use(passport.initialize())
-app.use(passport.session())
-app.use(cookieParser())
 
 app.use('/api/sessions', usersRouter)
-app.use ("/api/sessions/products", productRoutes)
-app.use ("/api/sessions/cart", cartRoutes)
+
 
 app.get('/', (req, res) => {
     res.send('Express Sessions!')

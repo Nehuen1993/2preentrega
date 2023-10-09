@@ -2,10 +2,12 @@ const express = require('express');
 const router = express.Router();
 const usuario = require('../models/User');
 const {isValidatePassword } = require('../../utils');
-const {products} = require('../models/Product');
+const productos = require('../models/Product');
+const cartModel = require ('../models/Carrito');
 const passport = require("passport")
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+
 
 
 router.get("/login", async (req, res) => {
@@ -16,33 +18,59 @@ router.get("/register", async (req, res) => {
     res.render("register")
 })
 
+router.post("/login", async (req, res) => {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).render("login", { error: "Valores erroneos" });
+
+    const user = await usuario.findOne({ email }, { first_name: 1, last_name: 1, age: 1, password: 1, email: 1 , isAdmin: 1 });
+        let products= await productos.find()
+        req.session.products = products
+        console.log (products)
+
+    if (!user) {
+        return res.status(400).render("login", { error: "Usuario no encontrado" });
+    }
+
+    if (!isValidatePassword(user, password)) {
+        return res.status(401).render("login", { error: "Error en password" });
+    }
+    console.log (user)
+
+    req.session.user = {
+        first_name: user.first_name,
+        last_name: user.last_name,
+        email: user.email,
+        age: user.age,
+        isAdmin: user.isAdmin
+    };
+    
+
+    if (user.isAdmin == false) {
+        res.redirect("/api/sessions/producto");
+    } else {
+        res.redirect("/api/sessions/admin");
+        
+    }
+    
+})
 
 
 router.get("/producto", async (req, res) => {
     if (!req.session.user ) {
         return res.redirect("login")
     }
+
     const { first_name, last_name, email, age, isAdmin} = req.session.user
-
     try {
-
-        let page = req.query.page ? parseInt(req.query.page) : 1
-        if (!page) page = 1
-        let limit = req.query.limit ? parseInt(req.query.limit) : 10;
-        if (!limit) limit = 10;
-
-        let paginado = await products.paginate({}, { page, limit, lean: true })
-        paginado.prevLink = paginado.hasPrevPage ? `http://localhost:8080/products?page=${paginado.prevPage}` : '';
-        paginado.nextLink = paginado.hasNextPage ? `http://localhost:8080/products?page=${paginado.nextPage}` : '';
-        paginado.isValid = !(page <= 0 || page > paginado.totalPages)
        
-        const productos= await products.find();
-        const productsWithOwnProperties = productos.map(producto => {
+        const products= await productos.find();
+        const productsWithOwnProperties = products.map(producto => {
             return {
                 nombre: producto.nombre,
                 precio: producto.precio,
-                id: producto._id
-            }})
+                _id: producto._id
+            };
+        });
         
         res.render("producto", { first_name, last_name, age, email, isAdmin, products: productsWithOwnProperties });
         
@@ -50,7 +78,6 @@ router.get("/producto", async (req, res) => {
         console.error("Error al obtener productos:", error);
         
     }
-    
 })
 
 router.get("/admin", async (req, res) => {
@@ -59,7 +86,6 @@ router.get("/admin", async (req, res) => {
     }
 
     const { first_name, last_name, email, age, isAdmin} = req.session.user
-
     try {
        
         const products= await productos.find();
@@ -85,23 +111,21 @@ router.get("/logout", async (req, res) => {
     res.redirect("/api/sessions/login")
 })
 
+router.post('/register', async (req, res) => {
+  const { first_name, last_name, email, age, password } = req.body;
 
-router.post('/register', passport.authenticate("register", { failureRedirect: "/api/sessions/failregister" }), async (req, res) => {
-    const { first_name, last_name, email, age, password } = req.body;
-
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
+  
+  const hashedPassword = await bcrypt.hash(password, 10);
     const user = await usuario.create({
         first_name,
         last_name,
         email,
         age,
         password: hashedPassword
-    });
+  });
 
     console.log('Usuario registrado con éxito.' + user);
-    res.redirect('login');
+    res.redirect('/api/sessions/login');
 });
 
 
@@ -116,59 +140,60 @@ router.get("/faillogin", async (req, res) => {
     res.send({ error: "Falla" })
 })
 
-router.post("/login", (req, res) => {
-    const { email, password } = req.body
-    if (email == "coder@coder.com" && password == "coderpass") {
-        let token = jwt.sign({ email, password }, "coderSecret", { expiresIn: "24h" })
-        res.cookie("coderCookieToken", token, {
-            maxAge: 60 * 60 * 1000,
-            httpOnly: true
-        }).send({ message: "Logueado existosamente" })
-    }
-})
-
-router.get("/github", passport.authenticate("github", { scope: ["user:email"] }), async (req, res) => { })
-
-router.get("/githubcallback", passport.authenticate("github", { failureRedirect: "/api/session/login" }), async (req, res) => {
-    req.session.user = req.user
-    res.redirect("/api/sessions/producto")
-
-})
-
-router.post("/login", passport.authenticate("login", { failureRedirect: "/faillogin" }), async (req, res) => {
-
-const { email, password } = req.body;
-    if (!email || !password) return res.status(400).render("login", { error: "Valores erroneos" });
-
-    const user = await usuario.findOne({ email }, { first_name: 1, last_name: 1, age: 1, password: 1, email: 1 , isAdmin: 1 });
-        let products= await productos.find()
-        req.session.products = products
-        console.log (products)
-    if (!user) {
-        return res.status(400).render("login", { error: "Usuario no encontrado" });
-    }
-
-    if (!isValidatePassword(user.password, password)) {
-        return res.status(401).render("login", { error: "Error en password" });
-    }
-    console.log (user)
-    
-    req.session.user = {
-        first_name: req.user.first_name,
-        last_name: req.user.last_name,
-        email: req.user.email,
-        age: req.user.age
-    }
-
-     
-    if (user.isAdmin == false) {
-        res.redirect("/api/sessions/producto");
-    } else {
-        res.redirect("/api/sessions/admin");
+router.post ('/agregar', async(req, res) => {
+    try {
+        let {nombre, categoria, precio, stock, imagen} = req.body
+        if (!nombre || !categoria || !precio || !stock || !imagen ) {
+            res.send({status: "error", error: "Faltan datos"})
+        }
+       
+        let result = await productos.create({nombre, categoria, precio, stock, imagen, })
         
+        console.log ("producto agregado" + result)
+        res.redirect('/api/sessions/admin')
+    } catch (error) {
+        console.log(error)
     }
+})
+
+router.post('/agregarCarrito', async (req, res) => {
+    try {
     
-}
-)
+        
+        const {pid} = req.body    
+        console.log (pid)
+        const producto = await productos.findById(pid)
+
+        console.log (producto)
+       
+
+        if (!producto) {
+            res.send({ status: "error", error: "Producto no encontrado" })
+            return
+        }
+
+        const carritoItem = {
+            products: [{
+            nombre: producto.nombre,
+            categoria: producto.categoria,
+            precio: producto.precio,
+            cantidad: 1,
+            imagen: producto.imagen
+            }]
+            
+        };
+
+    
+        const result = await cartModel.create(carritoItem)
+
+        console.log ("producto agregado" + result)
+        res.redirect('/api/sessions/producto')
+    } catch (error) {
+        console.log(error)
+    }
+})
+
+
 
 module.exports = router;
+

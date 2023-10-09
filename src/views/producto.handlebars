@@ -7,12 +7,12 @@
 
 <ul>
         {{#each products}}
-            <li>{{ this.nombre }} - Precio: {{ this.precio}}  - ID: {{ this.id }}</li>
+            <li>{{ this.nombre }} - Precio: {{ this.precio}}  - ID: {{ this._id}}</li>
         {{/each}}
     </ul>
       
-      <form method="PUT" action="serch">
-    <label for="pid">ID</label>
+      <form method="POST" action="agregarCarrito">
+    <label>ID</label>
     <input type="text" name="pid" required>
 
 
