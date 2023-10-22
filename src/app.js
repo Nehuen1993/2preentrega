@@ -53,6 +53,11 @@ app.set('view engine', 'handlebars')
 
 app.use('/api/sessions', usersRouter)
 
+initializePassport(passport)
+app.use(passport.initialize())
+app.use(passport.session())
+app.use(cookieParser())
+
 
 app.get('/', (req, res) => {
     res.send('Express Sessions!')
